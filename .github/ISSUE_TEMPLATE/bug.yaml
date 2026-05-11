@@ -1,0 +1,24 @@
+name: Bug Report
+description: Create a report to help us improve
+title: "[Bug Report]"
+labels: ["bug"]
+projects: ["Add project"]
+assignees: <add GitHub username>
+body:
+  - type: textarea
+    id: what-happened-1
+    attributes:
+      label: Outline bug
+      description: Outline Outline bug Details
+      placeholder: Tell us what you see
+      value: "Add details"
+    validations:
+      required: true
+  - type: dropdown
+    id: TF-Groups-1
+    attributes:
+      label: Issue dependency with other TF Groups
+      multiple: true
+      options:
+        - No Dependency
+        - Add WG names

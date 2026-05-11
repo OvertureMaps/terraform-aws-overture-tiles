@@ -1,0 +1,18 @@
+# CODEOWNERS for repos created from OvertureMaps/repo_template.
+#
+# This file controls who is requested for review on pull requests.
+# Branch protection in this org requires at least one code owner approval,
+# so this file must exist and define at least one owner pattern.
+#
+# The default below routes all reviews to the broad @OvertureMaps/members team
+# as a safety net so PRs are never blocked by missing ownership.
+#
+# Repos should override this with their actual maintainers as soon as
+# ownership is established. Examples:
+#   *           @OvertureMaps/your-team
+#   /infra/     @OvertureMaps/cloudops
+#   *.md        @OvertureMaps/docs
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @OvertureMaps/members

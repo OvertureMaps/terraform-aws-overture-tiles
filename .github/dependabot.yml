@@ -1,0 +1,16 @@
+---
+version: 2
+updates:
+  # Maintain GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "bot"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "[CHORE](deps)"
+      include: "scope"
