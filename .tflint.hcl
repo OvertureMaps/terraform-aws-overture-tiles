@@ -1,5 +1,5 @@
 config {
-  module = true
+  call_module_type = "local"
 }
 
 plugin "aws" {
