@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # ────────────────────────────────────────────
+  # Format check
+  # ────────────────────────────────────────────
+  fmt:
+    name: Format
+    runs-on: ubuntu-slim
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb # v2.0.0
+        with:
+          tofu_version: "1.9.0"
+          tofu_wrapper: false
+
+      - name: tofu fmt
+        run: tofu fmt -check -recursive
+
+  # ────────────────────────────────────────────
+  # Validate – no provider credentials needed
+  # ────────────────────────────────────────────
+  validate:
+    name: Validate
+    runs-on: ubuntu-slim
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb # v2.0.0
+        with:
+          tofu_version: "1.9.0"
+          tofu_wrapper: false
+
+      - name: tofu init (module root)
+        run: tofu init -backend=false
+
+      - name: tofu validate
+        run: tofu validate
+
+      - name: tofu init (example/complete)
+        run: tofu init -backend=false
+        working-directory: examples/complete
+
+      - name: tofu validate (example/complete)
+        run: tofu validate
+        working-directory: examples/complete
+
+  # ────────────────────────────────────────────
+  # Unit tests – mocked provider, no AWS creds
+  # ────────────────────────────────────────────
+  test:
+    name: Test
+    runs-on: ubuntu-slim
+    needs: [fmt, validate]
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb # v2.0.0
+        with:
+          tofu_version: "1.9.0"
+          tofu_wrapper: false
+
+      - name: tofu init
+        run: tofu init -backend=false
+
+      - name: tofu test
+        run: tofu test
+        env:
+          # No real AWS credentials — mock_provider handles everything.
+          TF_CLI_ARGS_test: "-verbose"
+
+  # ────────────────────────────────────────────
+  # Lint
+  # ────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-slim
+    needs: [validate]
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb # v2.0.0
+        with:
+          tofu_version: "1.9.0"
+          tofu_wrapper: false
+
+      - uses: terraform-linters/setup-tflint@b480b8fcdaa6f2c577f8e4fa799e89e756bb7c93 # v6.2.2
+        with:
+          tflint_version: latest
+
+      - name: tflint init
+        run: tflint --init
+
+      - name: tflint
+        run: tflint --recursive
