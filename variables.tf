@@ -160,7 +160,7 @@ variable "subnet_ids" {
   default     = null
 
   validation {
-    condition     = var.create_vpc || (var.subnet_ids != null && length(var.subnet_ids) > 0)
+    condition     = var.create_vpc || try(length(var.subnet_ids) > 0, false)
     error_message = "subnet_ids must be provided when create_vpc is false."
   }
 }
