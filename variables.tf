@@ -26,31 +26,8 @@ variable "name_overrides" {
     instance_profile           = optional(string)
     security_group             = optional(string)
     security_group_description = optional(string)
-    scratch_role_policy        = optional(string)
   })
   default = {}
-}
-
-variable "execution_role_additional_actions" {
-  description = "Extra IAM actions to add to the execution role inline policy (e.g. [\"sts:AssumeRole\"])."
-  type        = list(string)
-  default     = []
-}
-
-variable "execution_role_policy_resources" {
-  description = "Resource ARNs for the execution role inline policy. Defaults to [\"*\"] when any additional_actions are present; otherwise scoped to the log group."
-  type        = list(string)
-  default     = null
-}
-
-# ──────────────────────────────────────────────
-# Scratch bucket — optional extra S3 access for the job role
-# ──────────────────────────────────────────────
-
-variable "scratch_bucket_name" {
-  description = "Name of a scratch S3 bucket that job containers need read/write access to. When set, an additional inline policy (ListBucket + GetObject/PutObject/PutObjectAcl) is attached to the job role covering both the scratch bucket and the release/tiles bucket."
-  type        = string
-  default     = null
 }
 
 variable "tags" {

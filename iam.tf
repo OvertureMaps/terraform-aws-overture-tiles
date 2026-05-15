@@ -38,37 +38,6 @@ resource "aws_iam_role_policy" "job_s3" {
   })
 }
 
-resource "aws_iam_role_policy" "job_s3_readwrite" {
-  count = var.scratch_bucket_name != null ? 1 : 0
-
-  name        = var.name_overrides.scratch_role_policy
-  name_prefix = var.name_overrides.scratch_role_policy == null ? "${var.name_prefix}-s3-rw-" : null
-  role        = aws_iam_role.job.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "AllowListBuckets"
-        Effect = "Allow"
-        Action = ["s3:ListBucket"]
-        Resource = [
-          "arn:aws:s3:::${var.scratch_bucket_name}",
-          local.tiles_bucket_arn,
-        ]
-      },
-      {
-        Sid    = "AllowReadWrite"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:PutObjectAcl"]
-        Resource = [
-          "arn:aws:s3:::${var.scratch_bucket_name}/*",
-          "${local.tiles_bucket_arn}/*",
-        ]
-      }
-    ]
-  })
-}
-
 # ──────────────────────────────────────────────
 # ECS task execution role – used by the ECS agent to pull images and write logs
 # ──────────────────────────────────────────────
@@ -89,11 +58,6 @@ resource "aws_iam_role" "execution" {
   tags = var.tags
 }
 
-locals {
-  execution_policy_actions   = concat(["logs:CreateLogStream", "logs:PutLogEvents"], var.execution_role_additional_actions)
-  execution_policy_resources = var.execution_role_policy_resources != null ? var.execution_role_policy_resources : ["${aws_cloudwatch_log_group.batch.arn}:*"]
-}
-
 resource "aws_iam_role_policy" "execution_logs" {
   name        = var.name_overrides.execution_role_policy
   name_prefix = var.name_overrides.execution_role_policy == null ? "${var.name_prefix}-logs-" : null
@@ -103,8 +67,8 @@ resource "aws_iam_role_policy" "execution_logs" {
     Statement = [{
       Sid      = "AllowCloudWatchLogs"
       Effect   = "Allow"
-      Action   = local.execution_policy_actions
-      Resource = local.execution_policy_resources
+      Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+      Resource = "${aws_cloudwatch_log_group.batch.arn}:*"
     }]
   })
 }

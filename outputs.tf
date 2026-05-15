@@ -48,9 +48,19 @@ output "job_role_arn" {
   value       = aws_iam_role.job.arn
 }
 
+output "job_role_name" {
+  description = "Name of the IAM role assumed by Batch task containers."
+  value       = aws_iam_role.job.name
+}
+
 output "execution_role_arn" {
   description = "ARN of the IAM role used by the ECS agent to pull images and write logs."
   value       = aws_iam_role.execution.arn
+}
+
+output "execution_role_name" {
+  description = "Name of the IAM role used by the ECS agent to pull images and write logs."
+  value       = aws_iam_role.execution.name
 }
 
 output "log_group_name" {
