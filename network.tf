@@ -56,7 +56,7 @@ resource "aws_route_table_association" "public" {
 resource "aws_security_group" "batch" {
   name        = var.name_overrides.security_group
   name_prefix = var.name_overrides.security_group == null ? "${var.name_prefix}-batch-" : null
-  description = coalesce(var.name_overrides.security_group_description, "Outbound-only security group for ${var.name_prefix} Batch workers")
+  description = "Outbound-only security group for ${var.name_prefix} Batch workers"
   vpc_id      = local.vpc_id
 
   egress {

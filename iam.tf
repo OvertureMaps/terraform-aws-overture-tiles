@@ -5,7 +5,7 @@
 resource "aws_iam_role" "job" {
   name        = var.name_overrides.job_role
   name_prefix = var.name_overrides.job_role == null ? "${var.name_prefix}-job-" : null
-  description = var.name_overrides.job_role_description
+  description = "IAM role assumed by Batch task containers for S3 write access"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

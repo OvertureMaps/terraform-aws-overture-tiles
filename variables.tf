@@ -18,14 +18,12 @@ variable "name_overrides" {
   type = object({
     cloudwatch_log_group       = optional(string)
     job_role                   = optional(string)
-    job_role_description       = optional(string)
     job_role_policy            = optional(string)
     execution_role             = optional(string)
     execution_role_policy      = optional(string)
     instance_role              = optional(string)
     instance_profile           = optional(string)
     security_group             = optional(string)
-    security_group_description = optional(string)
   })
   default = {}
 }
