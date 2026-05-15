@@ -16,14 +16,14 @@ variable "name_prefix" {
 variable "name_overrides" {
   description = "Override names and descriptions for resources that already exist in state. All fields are optional; omitted fields cause the module to derive a name from name_prefix."
   type = object({
-    cloudwatch_log_group       = optional(string)
-    job_role                   = optional(string)
-    job_role_policy            = optional(string)
-    execution_role             = optional(string)
-    execution_role_policy      = optional(string)
-    instance_role              = optional(string)
-    instance_profile           = optional(string)
-    security_group             = optional(string)
+    cloudwatch_log_group  = optional(string)
+    job_role              = optional(string)
+    job_role_policy       = optional(string)
+    execution_role        = optional(string)
+    execution_role_policy = optional(string)
+    instance_role         = optional(string)
+    instance_profile      = optional(string)
+    security_group        = optional(string)
   })
   default = {}
 }
