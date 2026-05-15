@@ -50,15 +50,17 @@ See [`examples/complete`](examples/complete) for a full working example.
 
 | Name | Description | Type | Default | Required |
 |---|---|---|---|---|
-| `bucket_name` | S3 bucket name for generated PMTiles | `string` | — | yes |
+| `bucket_name` | S3 bucket name for generated PMTiles (required when `create_s3_bucket = true`; used in IAM policies when false) | `string` | `null` | conditional |
 | `name_prefix` | Prefix applied to all resource names | `string` | `"overture-tiles"` | no |
 | `tags` | Tags applied to every resource | `map(string)` | `{}` | no |
+| `create_s3_bucket` | Create the tiles S3 bucket | `bool` | `true` | no |
 | `public_access_enabled` | Disable S3 Block Public Access and add public-read policy | `bool` | `true` | no |
 | `cors_allowed_origins` | Origins allowed in the S3 CORS rule | `list(string)` | `["*"]` | no |
 | `create_cloudfront_distribution` | Create a CloudFront distribution backed by the S3 bucket | `bool` | `true` | no |
 | `cloudfront_price_class` | CloudFront price class | `string` | `"PriceClass_All"` | no |
 | `container_image` | Container image used by every Batch job definition | `string` | `"ghcr.io/overturemaps/overture-tiles:latest"` | no |
 | `themes` | Overture themes for which to create Batch job definitions | `list(string)` | all 7 themes | no |
+| `job_definition_name_overrides` | Map of theme → job definition name override | `map(string)` | `{}` | no |
 | `instance_types` | EC2 instance types for the Batch compute environment | `list(string)` | `["c7gd.8xlarge"]` | no |
 | `job_memory_gib` | Memory (GiB) allocated to each Batch job | `number` | `60` | no |
 | `job_vcpus` | vCPUs allocated to each Batch job | `number` | `30` | no |
@@ -66,8 +68,28 @@ See [`examples/complete`](examples/complete) for a full working example.
 | `use_spot` | Use Spot instances for the compute environment | `bool` | `false` | no |
 | `configure_instance_storage` | Format and mount NVMe instance store as Docker data root | `bool` | `true` | no |
 | `ami_id` | Custom ECS-optimised AMI ID (defaults to latest ARM64 Amazon Linux 2023) | `string` | `null` | no |
+| `service_role_arn` | ARN of the IAM service-linked role for Batch; omitted when null | `string` | `null` | no |
+| `ec2_image_type` | ECS-optimised AMI family for `ec2_configuration` (e.g. `ECS_AL2023`); omitted when null | `string` | `null` | no |
+| `launch_template_name_prefix` | Override for the launch template `name_prefix`; defaults to `<name_prefix>-` | `string` | `null` | no |
+| `ebs_device_name` | Device name for an extra EBS volume on the launch template; no volume when null | `string` | `null` | no |
+| `ebs_volume_size_gb` | Size (GiB) of the extra EBS volume | `number` | `2500` | no |
+| `ebs_volume_type` | EBS volume type for the extra volume | `string` | `"gp3"` | no |
+| `ebs_iops` | Provisioned IOPS for the extra EBS volume | `number` | `10000` | no |
+| `ebs_throughput` | Throughput (MB/s) for the extra EBS volume | `number` | `500` | no |
+| `scratch_bucket_name` | Name of a scratch S3 bucket; when set adds a readwrite inline policy to the job role | `string` | `null` | no |
 | `create_vpc` | Create a minimal VPC for the Batch compute environment | `bool` | `false` | no |
 | `log_retention_days` | CloudWatch log retention in days | `number` | `30` | no |
+| `cloudwatch_log_group_name` | Override for the CloudWatch log group name; defaults to `/aws/batch/<name_prefix>` | `string` | `null` | no |
+| `job_role_name` | Fixed name for the Batch job IAM role; uses `name_prefix` when null | `string` | `null` | no |
+| `job_role_policy_name` | Fixed name for the S3 write inline policy on the job role | `string` | `null` | no |
+| `scratch_role_policy_name` | Fixed name for the scratch readwrite inline policy on the job role | `string` | `null` | no |
+| `execution_role_name` | Fixed name for the ECS task execution IAM role | `string` | `null` | no |
+| `execution_role_policy_name` | Fixed name for the logs inline policy on the execution role | `string` | `null` | no |
+| `execution_role_additional_actions` | Extra IAM actions for the execution role inline policy | `list(string)` | `[]` | no |
+| `execution_role_policy_resources` | Resource ARNs for the execution role inline policy | `list(string)` | `null` | no |
+| `instance_role_name` | Fixed name for the EC2 instance IAM role | `string` | `null` | no |
+| `instance_profile_name` | Fixed name for the EC2 instance profile | `string` | `null` | no |
+| `security_group_name` | Fixed name for the Batch security group | `string` | `null` | no |
 
 ## Outputs
 

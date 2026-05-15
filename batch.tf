@@ -34,18 +34,38 @@ locals {
     "",
     "--==BOUNDARY==--",
   ]))
+
+  resolved_log_group_name           = coalesce(var.cloudwatch_log_group_name, "/aws/batch/${var.name_prefix}")
+  resolved_launch_template_name_pfx = coalesce(var.launch_template_name_prefix, "${var.name_prefix}-")
+  resolved_compute_env_name_pfx     = coalesce(var.compute_env_name_prefix, "${var.name_prefix}-")
 }
 
 resource "aws_launch_template" "batch" {
-  name_prefix = "${var.name_prefix}-"
+  name_prefix = local.resolved_launch_template_name_pfx
   image_id    = local.resolved_ami_id
   user_data   = var.configure_instance_storage ? local.instance_storage_user_data : null
+
+  dynamic "block_device_mappings" {
+    for_each = var.ebs_device_name != null ? [1] : []
+    content {
+      device_name = var.ebs_device_name
+
+      ebs {
+        volume_size           = var.ebs_volume_size_gb
+        volume_type           = var.ebs_volume_type
+        iops                  = var.ebs_iops
+        throughput            = var.ebs_throughput
+        delete_on_termination = true
+        encrypted             = true
+      }
+    }
+  }
 
   tags = var.tags
 }
 
 resource "aws_cloudwatch_log_group" "batch" {
-  name              = "/aws/batch/${var.name_prefix}"
+  name              = local.resolved_log_group_name
   retention_in_days = var.log_retention_days
   tags              = var.tags
 }
@@ -54,16 +74,26 @@ resource "aws_cloudwatch_log_group" "batch" {
 resource "aws_batch_job_definition" "tiles" {
   for_each = toset(var.themes)
 
-  name                  = "${var.name_prefix}-${each.key}"
+  name                  = lookup(var.job_definition_name_overrides, each.key, "${var.name_prefix}-${each.key}")
   type                  = "container"
   platform_capabilities = ["EC2"]
 
   container_properties = jsonencode({
     image            = var.container_image
-    memory           = var.job_memory_gib * 1024
-    vcpus            = var.job_vcpus
     jobRoleArn       = aws_iam_role.job.arn
     executionRoleArn = aws_iam_role.execution.arn
+
+    resourceRequirements = [
+      {
+        type  = "VCPU"
+        value = tostring(var.job_vcpus)
+      },
+      {
+        type  = "MEMORY"
+        value = tostring(var.job_memory_gib * 1024)
+      }
+    ]
+
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -78,8 +108,9 @@ resource "aws_batch_job_definition" "tiles" {
 }
 
 resource "aws_batch_compute_environment" "tiles" {
-  name_prefix = "${var.name_prefix}-"
-  type        = "MANAGED"
+  name_prefix  = local.resolved_compute_env_name_pfx
+  type         = "MANAGED"
+  service_role = var.service_role_arn
 
   compute_resources {
     type                = var.use_spot ? "SPOT" : "EC2"
@@ -94,6 +125,13 @@ resource "aws_batch_compute_environment" "tiles" {
     launch_template {
       launch_template_id = aws_launch_template.batch.id
       version            = "$Latest"
+    }
+
+    dynamic "ec2_configuration" {
+      for_each = var.ec2_image_type != null ? [1] : []
+      content {
+        image_type = var.ec2_image_type
+      }
     }
   }
 

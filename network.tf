@@ -54,7 +54,8 @@ resource "aws_route_table_association" "public" {
 # Security group for the Batch compute environment.
 # Outbound-only: jobs pull data from S3 and ghcr.io, then push results to S3.
 resource "aws_security_group" "batch" {
-  name_prefix = "${var.name_prefix}-batch-"
+  name        = var.security_group_name
+  name_prefix = var.security_group_name == null ? "${var.name_prefix}-batch-" : null
   description = "Outbound-only security group for ${var.name_prefix} Batch workers"
   vpc_id      = local.vpc_id
 

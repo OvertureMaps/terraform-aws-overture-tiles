@@ -8,6 +8,87 @@ variable "name_prefix" {
   default     = "overture-tiles"
 }
 
+# ──────────────────────────────────────────────
+# Name overrides — set these to import existing resources without renaming them.
+# When null the module derives a name from name_prefix.
+# ──────────────────────────────────────────────
+
+variable "cloudwatch_log_group_name" {
+  description = "Override for the CloudWatch log group name. When null defaults to /aws/batch/<name_prefix>."
+  type        = string
+  default     = null
+}
+
+variable "job_role_name" {
+  description = "Fixed name for the Batch job IAM role. When null a name_prefix is used."
+  type        = string
+  default     = null
+}
+
+variable "job_role_policy_name" {
+  description = "Fixed name for the inline S3 write policy on the job role. When null a name_prefix is used."
+  type        = string
+  default     = null
+}
+
+variable "execution_role_name" {
+  description = "Fixed name for the ECS task execution IAM role. When null a name_prefix is used."
+  type        = string
+  default     = null
+}
+
+variable "execution_role_policy_name" {
+  description = "Fixed name for the inline logs policy on the execution role. When null a name_prefix is used."
+  type        = string
+  default     = null
+}
+
+variable "execution_role_additional_actions" {
+  description = "Extra IAM actions to add to the execution role inline policy (e.g. [\"sts:AssumeRole\"])."
+  type        = list(string)
+  default     = []
+}
+
+variable "execution_role_policy_resources" {
+  description = "Resource ARNs for the execution role inline policy. Defaults to [\"*\"] when any additional_actions are present; otherwise scoped to the log group."
+  type        = list(string)
+  default     = null
+}
+
+variable "instance_role_name" {
+  description = "Fixed name for the EC2 instance IAM role. When null a name_prefix is used."
+  type        = string
+  default     = null
+}
+
+variable "instance_profile_name" {
+  description = "Fixed name for the EC2 instance profile. When null a name_prefix is used."
+  type        = string
+  default     = null
+}
+
+variable "security_group_name" {
+  description = "Fixed name for the Batch compute environment security group. When null a name_prefix is used."
+  type        = string
+  default     = null
+}
+
+# ──────────────────────────────────────────────
+# Scratch bucket — optional extra S3 access for the job role
+# ──────────────────────────────────────────────
+
+variable "scratch_bucket_name" {
+  description = "Name of a scratch S3 bucket that job containers need read/write access to. When set, an additional inline policy (ListBucket + GetObject/PutObject/PutObjectAcl) is attached to the job role covering both the scratch bucket and the release/tiles bucket."
+  type        = string
+  default     = null
+}
+
+variable "scratch_role_policy_name" {
+  description = "Fixed name for the scratch+release readwrite inline policy on the job role. When null a name_prefix is used."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Tags to apply to every resource that supports them."
   type        = map(string)
@@ -18,9 +99,21 @@ variable "tags" {
 # S3
 # ──────────────────────────────────────────────
 
+variable "create_s3_bucket" {
+  description = "Whether to create the tiles S3 bucket. Set to false when the bucket already exists and should not be managed by this module."
+  type        = bool
+  default     = true
+}
+
 variable "bucket_name" {
-  description = "Name of the S3 bucket used to store generated PMTiles."
+  description = "Name of the S3 bucket used to store generated PMTiles. Required when create_s3_bucket is true; used in IAM policies when create_s3_bucket is false."
   type        = string
+  default     = null
+
+  validation {
+    condition     = !var.create_s3_bucket || var.bucket_name != null
+    error_message = "bucket_name is required when create_s3_bucket is true."
+  }
 }
 
 variable "public_access_enabled" {
@@ -130,6 +223,64 @@ variable "configure_instance_storage" {
   description = "Whether to format and mount NVMe instance-store volumes as the Docker data root on launch. Recommended for c7gd and other NVMe-backed instance families."
   type        = bool
   default     = true
+}
+
+variable "launch_template_name_prefix" {
+  description = "Override for the launch template name_prefix. When null defaults to <name_prefix>-."
+  type        = string
+  default     = null
+}
+
+variable "ebs_device_name" {
+  description = "Device name for an additional EBS volume attached via the launch template. When null no extra EBS volume is added."
+  type        = string
+  default     = null
+}
+
+variable "ebs_volume_size_gb" {
+  description = "Size (GiB) of the extra EBS volume. Only used when ebs_device_name is set."
+  type        = number
+  default     = 2500
+}
+
+variable "ebs_volume_type" {
+  description = "EBS volume type for the extra volume. Only used when ebs_device_name is set."
+  type        = string
+  default     = "gp3"
+}
+
+variable "ebs_iops" {
+  description = "Provisioned IOPS for the extra EBS volume. Only used when ebs_device_name is set."
+  type        = number
+  default     = 10000
+}
+
+variable "ebs_throughput" {
+  description = "Throughput (MB/s) for the extra EBS volume. Only used when ebs_device_name is set."
+  type        = number
+  default     = 500
+}
+
+variable "compute_env_name_prefix" {
+  description = "Override for the Batch compute environment name_prefix. When null defaults to <name_prefix>-."
+  type        = string
+  default     = null
+}
+
+variable "service_role_arn" {
+  description = "ARN of the IAM service-linked role for AWS Batch. When null the service_role attribute is omitted and AWS uses the default service-linked role."
+  type        = string
+  default     = null
+}
+  description = "ECS-optimised AMI family for the ec2_configuration block (e.g. ECS_AL2023). When null the ec2_configuration block is omitted."
+  type        = string
+  default     = null
+}
+
+variable "job_definition_name_overrides" {
+  description = "Map of theme name to Batch job definition name. Any theme not listed uses the default <name_prefix>-<theme> name."
+  type        = map(string)
+  default     = {}
 }
 
 # ──────────────────────────────────────────────

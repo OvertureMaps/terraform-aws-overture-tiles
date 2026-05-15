@@ -16,7 +16,7 @@ resource "aws_cloudfront_distribution" "tiles" {
   comment     = "${var.name_prefix} tiles distribution"
 
   origin {
-    domain_name              = aws_s3_bucket.tiles.bucket_regional_domain_name
+    domain_name              = var.create_s3_bucket ? aws_s3_bucket.tiles[0].bucket_regional_domain_name : "${var.bucket_name}.s3.amazonaws.com"
     origin_id                = "s3-${var.bucket_name}"
     origin_access_control_id = aws_cloudfront_origin_access_control.tiles[0].id
   }

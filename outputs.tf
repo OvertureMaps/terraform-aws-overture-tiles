@@ -1,16 +1,16 @@
 output "bucket_id" {
   description = "Name (ID) of the tiles S3 bucket."
-  value       = aws_s3_bucket.tiles.id
+  value       = var.create_s3_bucket ? aws_s3_bucket.tiles[0].id : var.bucket_name
 }
 
 output "bucket_arn" {
   description = "ARN of the tiles S3 bucket."
-  value       = aws_s3_bucket.tiles.arn
+  value       = local.tiles_bucket_arn
 }
 
 output "bucket_regional_domain_name" {
   description = "Regional domain name of the tiles S3 bucket."
-  value       = aws_s3_bucket.tiles.bucket_regional_domain_name
+  value       = var.create_s3_bucket ? aws_s3_bucket.tiles[0].bucket_regional_domain_name : null
 }
 
 output "cloudfront_distribution_id" {

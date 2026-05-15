@@ -3,7 +3,9 @@
 # ──────────────────────────────────────────────
 
 resource "aws_iam_role" "job" {
-  name_prefix = "${var.name_prefix}-job-"
+  name        = var.job_role_name
+  name_prefix = var.job_role_name == null ? "${var.name_prefix}-job-" : null
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -16,8 +18,13 @@ resource "aws_iam_role" "job" {
   tags = var.tags
 }
 
+locals {
+  tiles_bucket_arn = var.create_s3_bucket ? aws_s3_bucket.tiles[0].arn : "arn:aws:s3:::${var.bucket_name}"
+}
+
 resource "aws_iam_role_policy" "job_s3" {
-  name_prefix = "${var.name_prefix}-s3-"
+  name        = var.job_role_policy_name
+  name_prefix = var.job_role_policy_name == null ? "${var.name_prefix}-s3-" : null
   role        = aws_iam_role.job.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -25,8 +32,39 @@ resource "aws_iam_role_policy" "job_s3" {
       Sid      = "AllowTileUpload"
       Effect   = "Allow"
       Action   = ["s3:PutObject", "s3:PutObjectAcl"]
-      Resource = "${aws_s3_bucket.tiles.arn}/*"
+      Resource = "${local.tiles_bucket_arn}/*"
     }]
+  })
+}
+
+resource "aws_iam_role_policy" "job_s3_readwrite" {
+  count = var.scratch_bucket_name != null ? 1 : 0
+
+  name        = var.scratch_role_policy_name
+  name_prefix = var.scratch_role_policy_name == null ? "${var.name_prefix}-s3-rw-" : null
+  role        = aws_iam_role.job.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowListBuckets"
+        Effect = "Allow"
+        Action = ["s3:ListBucket"]
+        Resource = [
+          "arn:aws:s3:::${var.scratch_bucket_name}",
+          local.tiles_bucket_arn,
+        ]
+      },
+      {
+        Sid    = "AllowReadWrite"
+        Effect = "Allow"
+        Action = ["s3:GetObject", "s3:PutObject", "s3:PutObjectAcl"]
+        Resource = [
+          "arn:aws:s3:::${var.scratch_bucket_name}/*",
+          "${local.tiles_bucket_arn}/*",
+        ]
+      }
+    ]
   })
 }
 
@@ -35,7 +73,9 @@ resource "aws_iam_role_policy" "job_s3" {
 # ──────────────────────────────────────────────
 
 resource "aws_iam_role" "execution" {
-  name_prefix = "${var.name_prefix}-execution-"
+  name        = var.execution_role_name
+  name_prefix = var.execution_role_name == null ? "${var.name_prefix}-execution-" : null
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -48,16 +88,22 @@ resource "aws_iam_role" "execution" {
   tags = var.tags
 }
 
+locals {
+  execution_policy_actions   = concat(["logs:CreateLogStream", "logs:PutLogEvents"], var.execution_role_additional_actions)
+  execution_policy_resources = var.execution_role_policy_resources != null ? var.execution_role_policy_resources : ["${aws_cloudwatch_log_group.batch.arn}:*"]
+}
+
 resource "aws_iam_role_policy" "execution_logs" {
-  name_prefix = "${var.name_prefix}-logs-"
+  name        = var.execution_role_policy_name
+  name_prefix = var.execution_role_policy_name == null ? "${var.name_prefix}-logs-" : null
   role        = aws_iam_role.execution.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Sid      = "AllowCloudWatchLogs"
       Effect   = "Allow"
-      Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
-      Resource = "${aws_cloudwatch_log_group.batch.arn}:*"
+      Action   = local.execution_policy_actions
+      Resource = local.execution_policy_resources
     }]
   })
 }
@@ -72,7 +118,9 @@ resource "aws_iam_role_policy_attachment" "execution_ecr" {
 # ──────────────────────────────────────────────
 
 resource "aws_iam_role" "ecs_instance" {
-  name_prefix = "${var.name_prefix}-ecs-instance-"
+  name        = var.instance_role_name
+  name_prefix = var.instance_role_name == null ? "${var.name_prefix}-ecs-instance-" : null
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -91,7 +139,8 @@ resource "aws_iam_role_policy_attachment" "ecs_instance" {
 }
 
 resource "aws_iam_instance_profile" "ecs" {
-  name_prefix = "${var.name_prefix}-"
+  name        = var.instance_profile_name
+  name_prefix = var.instance_profile_name == null ? "${var.name_prefix}-" : null
   role        = aws_iam_role.ecs_instance.name
   tags        = var.tags
 }

@@ -1,10 +1,12 @@
 resource "aws_s3_bucket" "tiles" {
+  count  = var.create_s3_bucket ? 1 : 0
   bucket = var.bucket_name
   tags   = var.tags
 }
 
 resource "aws_s3_bucket_public_access_block" "tiles" {
-  bucket = aws_s3_bucket.tiles.id
+  count  = var.create_s3_bucket ? 1 : 0
+  bucket = aws_s3_bucket.tiles[0].id
 
   block_public_acls       = !var.public_access_enabled
   block_public_policy     = !var.public_access_enabled
@@ -13,7 +15,8 @@ resource "aws_s3_bucket_public_access_block" "tiles" {
 }
 
 resource "aws_s3_bucket_cors_configuration" "tiles" {
-  bucket = aws_s3_bucket.tiles.id
+  count  = var.create_s3_bucket ? 1 : 0
+  bucket = aws_s3_bucket.tiles[0].id
 
   cors_rule {
     allowed_methods = ["GET"]
@@ -29,7 +32,7 @@ locals {
     Effect    = "Allow"
     Principal = "*"
     Action    = "s3:GetObject"
-    Resource  = "${aws_s3_bucket.tiles.arn}/*"
+    Resource  = "${local.tiles_bucket_arn}/*"
   })] : []
 
   bucket_policy_cloudfront_oac = var.create_cloudfront_distribution ? [jsonencode({
@@ -39,7 +42,7 @@ locals {
       Service = "cloudfront.amazonaws.com"
     }
     Action   = "s3:GetObject"
-    Resource = "${aws_s3_bucket.tiles.arn}/*"
+    Resource = "${local.tiles_bucket_arn}/*"
     Condition = {
       StringEquals = {
         "AWS:SourceArn" = aws_cloudfront_distribution.tiles[0].arn
@@ -49,9 +52,9 @@ locals {
 }
 
 resource "aws_s3_bucket_policy" "tiles" {
-  count = (var.public_access_enabled || var.create_cloudfront_distribution) ? 1 : 0
+  count = var.create_s3_bucket && (var.public_access_enabled || var.create_cloudfront_distribution) ? 1 : 0
 
-  bucket = aws_s3_bucket.tiles.id
+  bucket = aws_s3_bucket.tiles[0].id
   policy = jsonencode({
     Version   = "2012-10-17"
     Statement = concat(local.bucket_policy_public_read, local.bucket_policy_cloudfront_oac)
