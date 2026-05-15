@@ -9,38 +9,26 @@ variable "name_prefix" {
 }
 
 # ──────────────────────────────────────────────
-# Name overrides — set these to import existing resources without renaming them.
-# When null the module derives a name from name_prefix.
+# Name overrides — only needed when importing existing resources into state.
+# When omitted every name is derived from name_prefix.
 # ──────────────────────────────────────────────
 
-variable "cloudwatch_log_group_name" {
-  description = "Override for the CloudWatch log group name. When null defaults to /aws/batch/<name_prefix>."
-  type        = string
-  default     = null
-}
-
-variable "job_role_name" {
-  description = "Fixed name for the Batch job IAM role. When null a name_prefix is used."
-  type        = string
-  default     = null
-}
-
-variable "job_role_policy_name" {
-  description = "Fixed name for the inline S3 write policy on the job role. When null a name_prefix is used."
-  type        = string
-  default     = null
-}
-
-variable "execution_role_name" {
-  description = "Fixed name for the ECS task execution IAM role. When null a name_prefix is used."
-  type        = string
-  default     = null
-}
-
-variable "execution_role_policy_name" {
-  description = "Fixed name for the inline logs policy on the execution role. When null a name_prefix is used."
-  type        = string
-  default     = null
+variable "name_overrides" {
+  description = "Override names and descriptions for resources that already exist in state. All fields are optional; omitted fields cause the module to derive a name from name_prefix."
+  type = object({
+    cloudwatch_log_group       = optional(string)
+    job_role                   = optional(string)
+    job_role_description       = optional(string)
+    job_role_policy            = optional(string)
+    execution_role             = optional(string)
+    execution_role_policy      = optional(string)
+    instance_role              = optional(string)
+    instance_profile           = optional(string)
+    security_group             = optional(string)
+    security_group_description = optional(string)
+    scratch_role_policy        = optional(string)
+  })
+  default = {}
 }
 
 variable "execution_role_additional_actions" {
@@ -55,42 +43,12 @@ variable "execution_role_policy_resources" {
   default     = null
 }
 
-variable "instance_role_name" {
-  description = "Fixed name for the EC2 instance IAM role. When null a name_prefix is used."
-  type        = string
-  default     = null
-}
-
-variable "instance_profile_name" {
-  description = "Fixed name for the EC2 instance profile. When null a name_prefix is used."
-  type        = string
-  default     = null
-}
-
-variable "security_group_description" {
-  description = "Description for the Batch compute environment security group. Defaults to a generated description."
-  type        = string
-  default     = null
-}
-
-variable "security_group_name" {
-  description = "Fixed name for the Batch compute environment security group. When null a name_prefix is used."
-  type        = string
-  default     = null
-}
-
 # ──────────────────────────────────────────────
 # Scratch bucket — optional extra S3 access for the job role
 # ──────────────────────────────────────────────
 
 variable "scratch_bucket_name" {
   description = "Name of a scratch S3 bucket that job containers need read/write access to. When set, an additional inline policy (ListBucket + GetObject/PutObject/PutObjectAcl) is attached to the job role covering both the scratch bucket and the release/tiles bucket."
-  type        = string
-  default     = null
-}
-
-variable "scratch_role_policy_name" {
-  description = "Fixed name for the scratch+release readwrite inline policy on the job role. When null a name_prefix is used."
   type        = string
   default     = null
 }
@@ -198,112 +156,57 @@ variable "log_retention_days" {
 }
 
 # ──────────────────────────────────────────────
-# Compute environment
+# Launch template
 # ──────────────────────────────────────────────
 
-variable "instance_types" {
-  description = "EC2 instance types for the Batch compute environment. Defaults to c7gd.8xlarge (Graviton3 + NVMe instance store)."
-  type        = list(string)
-  default     = ["c7gd.8xlarge"]
+variable "launch_template" {
+  description = "Launch template configuration. Set existing_id to reference an externally-managed launch template and skip creation. All other fields configure the module-managed launch template."
+  type = object({
+    existing_id                = optional(string)
+    name_prefix                = optional(string)
+    ami_id                     = optional(string)
+    configure_instance_storage = optional(bool, true)
+    user_data                  = optional(string)
+    tag_specifications = optional(list(object({
+      resource_type = string
+      tags          = map(string)
+    })))
+    version = optional(string)
+  })
+  default = {}
 }
 
-variable "use_spot" {
-  description = "Whether to use EC2 Spot instances. When true the allocation strategy switches to SPOT_CAPACITY_OPTIMIZED."
-  type        = bool
-  default     = false
-}
+# ──────────────────────────────────────────────
+# EBS volume
+# ──────────────────────────────────────────────
 
-variable "max_vcpus" {
-  description = "Maximum total vCPUs across all instances in the compute environment."
-  type        = number
-  default     = 256
-}
-
-variable "ami_id" {
-  description = "Custom AMI ID for the Batch EC2 launch template. When null the module looks up the latest ECS-optimized Amazon Linux 2023 ARM64 AMI via SSM."
-  type        = string
-  default     = null
-}
-
-variable "configure_instance_storage" {
-  description = "Whether to format and mount NVMe instance-store volumes as the Docker data root on launch. Recommended for c7gd and other NVMe-backed instance families."
-  type        = bool
-  default     = true
-}
-
-variable "launch_template_name_prefix" {
-  description = "Override for the launch template name_prefix. When null defaults to <name_prefix>-."
-  type        = string
-  default     = null
-}
-
-variable "user_data" {
-  description = "Plaintext user data script for the launch template. When set, takes precedence over configure_instance_storage. The module base64-encodes this value before passing it to the launch template."
-  type        = string
-  default     = null
-}
-
-variable "launch_template_tag_specifications" {
-  description = "List of tag_specification blocks for the launch template (e.g. for instance and volume resource types). When null no tag_specifications are added."
-  type = list(object({
-    resource_type = string
-    tags          = map(string)
-  }))
+variable "ebs_volume" {
+  description = "Additional EBS volume to attach via the launch template. When null no extra EBS volume is added."
+  type = object({
+    device_name = string
+    size_gb     = optional(number, 2500)
+    type        = optional(string, "gp3")
+    iops        = optional(number, 10000)
+    throughput  = optional(number, 500)
+  })
   default = null
 }
 
-variable "ebs_device_name" {
-  description = "Device name for an additional EBS volume attached via the launch template. When null no extra EBS volume is added."
-  type        = string
-  default     = null
-}
+# ──────────────────────────────────────────────
+# Compute environment
+# ──────────────────────────────────────────────
 
-variable "ebs_volume_size_gb" {
-  description = "Size (GiB) of the extra EBS volume. Only used when ebs_device_name is set."
-  type        = number
-  default     = 2500
-}
-
-variable "ebs_volume_type" {
-  description = "EBS volume type for the extra volume. Only used when ebs_device_name is set."
-  type        = string
-  default     = "gp3"
-}
-
-variable "ebs_iops" {
-  description = "Provisioned IOPS for the extra EBS volume. Only used when ebs_device_name is set."
-  type        = number
-  default     = 10000
-}
-
-variable "ebs_throughput" {
-  description = "Throughput (MB/s) for the extra EBS volume. Only used when ebs_device_name is set."
-  type        = number
-  default     = 500
-}
-
-variable "compute_env_name_prefix" {
-  description = "Override for the Batch compute environment name_prefix. When null defaults to <name_prefix>-."
-  type        = string
-  default     = null
-}
-
-variable "service_role_arn" {
-  description = "ARN of the IAM service-linked role for AWS Batch. When null the service_role attribute is omitted and AWS uses the default service-linked role."
-  type        = string
-  default     = null
-}
-
-variable "ec2_image_type" {
-  description = "ECS-optimised AMI family for the ec2_configuration block (e.g. ECS_AL2023). When null the ec2_configuration block is omitted."
-  type        = string
-  default     = null
-}
-
-variable "launch_template_version" {
-  description = "Version of the launch template to reference in the Batch compute environment. When null the version attribute is omitted (Batch uses the default version)."
-  type        = string
-  default     = null
+variable "compute_environment" {
+  description = "Configuration for the Batch managed compute environment."
+  type = object({
+    name_prefix      = optional(string)
+    instance_types   = optional(list(string), ["c7gd.8xlarge"])
+    use_spot         = optional(bool, false)
+    max_vcpus        = optional(number, 256)
+    service_role_arn = optional(string)
+    ec2_image_type   = optional(string)
+  })
+  default = {}
 }
 
 variable "job_definition_name_overrides" {

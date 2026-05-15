@@ -20,10 +20,16 @@ module "overture_tiles" {
   job_vcpus       = 30
 
   # Compute environment – c7gd.8xlarge: Graviton3 + 1.9 TB NVMe instance store
-  instance_types             = ["c7gd.8xlarge"]
-  use_spot                   = false
-  max_vcpus                  = 256
-  configure_instance_storage = true
+  compute_environment = {
+    instance_types = ["c7gd.8xlarge"]
+    use_spot       = false
+    max_vcpus      = 256
+  }
+
+  # Launch template – format NVMe instance store as Docker data root
+  launch_template = {
+    configure_instance_storage = true
+  }
 
   # Network – let the module create a minimal VPC
   create_vpc = true

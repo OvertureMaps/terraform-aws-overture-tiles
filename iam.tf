@@ -3,8 +3,9 @@
 # ──────────────────────────────────────────────
 
 resource "aws_iam_role" "job" {
-  name        = var.job_role_name
-  name_prefix = var.job_role_name == null ? "${var.name_prefix}-job-" : null
+  name        = var.name_overrides.job_role
+  name_prefix = var.name_overrides.job_role == null ? "${var.name_prefix}-job-" : null
+  description = var.name_overrides.job_role_description
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -23,8 +24,8 @@ locals {
 }
 
 resource "aws_iam_role_policy" "job_s3" {
-  name        = var.job_role_policy_name
-  name_prefix = var.job_role_policy_name == null ? "${var.name_prefix}-s3-" : null
+  name        = var.name_overrides.job_role_policy
+  name_prefix = var.name_overrides.job_role_policy == null ? "${var.name_prefix}-s3-" : null
   role        = aws_iam_role.job.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -40,8 +41,8 @@ resource "aws_iam_role_policy" "job_s3" {
 resource "aws_iam_role_policy" "job_s3_readwrite" {
   count = var.scratch_bucket_name != null ? 1 : 0
 
-  name        = var.scratch_role_policy_name
-  name_prefix = var.scratch_role_policy_name == null ? "${var.name_prefix}-s3-rw-" : null
+  name        = var.name_overrides.scratch_role_policy
+  name_prefix = var.name_overrides.scratch_role_policy == null ? "${var.name_prefix}-s3-rw-" : null
   role        = aws_iam_role.job.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -73,8 +74,8 @@ resource "aws_iam_role_policy" "job_s3_readwrite" {
 # ──────────────────────────────────────────────
 
 resource "aws_iam_role" "execution" {
-  name        = var.execution_role_name
-  name_prefix = var.execution_role_name == null ? "${var.name_prefix}-execution-" : null
+  name        = var.name_overrides.execution_role
+  name_prefix = var.name_overrides.execution_role == null ? "${var.name_prefix}-execution-" : null
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -94,8 +95,8 @@ locals {
 }
 
 resource "aws_iam_role_policy" "execution_logs" {
-  name        = var.execution_role_policy_name
-  name_prefix = var.execution_role_policy_name == null ? "${var.name_prefix}-logs-" : null
+  name        = var.name_overrides.execution_role_policy
+  name_prefix = var.name_overrides.execution_role_policy == null ? "${var.name_prefix}-logs-" : null
   role        = aws_iam_role.execution.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -118,8 +119,8 @@ resource "aws_iam_role_policy_attachment" "execution_ecr" {
 # ──────────────────────────────────────────────
 
 resource "aws_iam_role" "ecs_instance" {
-  name        = var.instance_role_name
-  name_prefix = var.instance_role_name == null ? "${var.name_prefix}-ecs-instance-" : null
+  name        = var.name_overrides.instance_role
+  name_prefix = var.name_overrides.instance_role == null ? "${var.name_prefix}-ecs-instance-" : null
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -139,8 +140,8 @@ resource "aws_iam_role_policy_attachment" "ecs_instance" {
 }
 
 resource "aws_iam_instance_profile" "ecs" {
-  name        = var.instance_profile_name
-  name_prefix = var.instance_profile_name == null ? "${var.name_prefix}-" : null
+  name        = var.name_overrides.instance_profile
+  name_prefix = var.name_overrides.instance_profile == null ? "${var.name_prefix}-" : null
   role        = aws_iam_role.ecs_instance.name
   tags        = var.tags
 }

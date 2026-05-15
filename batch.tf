@@ -3,12 +3,14 @@ data "aws_region" "current" {}
 # ECS-optimised Amazon Linux 2023 ARM64 AMI – used when no custom ami_id is supplied.
 # c7gd (Graviton3 + NVMe instance store) requires an ARM64 image.
 data "aws_ssm_parameter" "ecs_optimized_ami" {
-  count = var.ami_id == null ? 1 : 0
+  count = (var.launch_template.existing_id == null && var.launch_template.ami_id == null) ? 1 : 0
   name  = "/aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id"
 }
 
 locals {
-  resolved_ami_id = var.ami_id != null ? var.ami_id : data.aws_ssm_parameter.ecs_optimized_ami[0].value
+  resolved_ami_id = var.launch_template.ami_id != null ? var.launch_template.ami_id : (
+    length(data.aws_ssm_parameter.ecs_optimized_ami) > 0 ? data.aws_ssm_parameter.ecs_optimized_ami[0].value : null
+  )
 
   # User data that formats the NVMe instance-store volume as ext4 and mounts it
   # as the Docker data root. This maximises available scratch space on
@@ -35,26 +37,32 @@ locals {
     "--==BOUNDARY==--",
   ]))
 
-  resolved_log_group_name           = coalesce(var.cloudwatch_log_group_name, "/aws/batch/${var.name_prefix}")
-  resolved_launch_template_name_pfx = coalesce(var.launch_template_name_prefix, "${var.name_prefix}-")
-  resolved_compute_env_name_pfx     = coalesce(var.compute_env_name_prefix, "${var.name_prefix}-")
+  resolved_log_group_name       = coalesce(var.name_overrides.cloudwatch_log_group, "/aws/batch/${var.name_prefix}")
+  resolved_lt_name_pfx          = coalesce(var.launch_template.name_prefix, "${var.name_prefix}-")
+  resolved_compute_env_name_pfx = coalesce(var.compute_environment.name_prefix, "${var.name_prefix}-")
 }
 
 resource "aws_launch_template" "batch" {
-  name_prefix = local.resolved_launch_template_name_pfx
+  count = var.launch_template.existing_id == null ? 1 : 0
+
+  name_prefix = local.resolved_lt_name_pfx
   image_id    = local.resolved_ami_id
-  user_data   = var.user_data != null ? base64encode(var.user_data) : (var.configure_instance_storage ? local.instance_storage_user_data : null)
+  user_data = (
+    var.launch_template.user_data != null
+    ? base64encode(var.launch_template.user_data)
+    : (var.launch_template.configure_instance_storage ? local.instance_storage_user_data : null)
+  )
 
   dynamic "block_device_mappings" {
-    for_each = var.ebs_device_name != null ? [1] : []
+    for_each = var.ebs_volume != null ? [var.ebs_volume] : []
     content {
-      device_name = var.ebs_device_name
+      device_name = block_device_mappings.value.device_name
 
       ebs {
-        volume_size           = var.ebs_volume_size_gb
-        volume_type           = var.ebs_volume_type
-        iops                  = var.ebs_iops
-        throughput            = var.ebs_throughput
+        volume_size           = block_device_mappings.value.size_gb
+        volume_type           = block_device_mappings.value.type
+        iops                  = block_device_mappings.value.iops
+        throughput            = block_device_mappings.value.throughput
         delete_on_termination = true
         encrypted             = true
       }
@@ -62,7 +70,7 @@ resource "aws_launch_template" "batch" {
   }
 
   dynamic "tag_specifications" {
-    for_each = var.launch_template_tag_specifications != null ? var.launch_template_tag_specifications : []
+    for_each = var.launch_template.tag_specifications != null ? var.launch_template.tag_specifications : []
     content {
       resource_type = tag_specifications.value.resource_type
       tags          = tag_specifications.value.tags
@@ -118,27 +126,27 @@ resource "aws_batch_job_definition" "tiles" {
 resource "aws_batch_compute_environment" "tiles" {
   name_prefix  = local.resolved_compute_env_name_pfx
   type         = "MANAGED"
-  service_role = var.service_role_arn
+  service_role = var.compute_environment.service_role_arn
 
   compute_resources {
-    type                = var.use_spot ? "SPOT" : "EC2"
-    allocation_strategy = var.use_spot ? "SPOT_CAPACITY_OPTIMIZED" : "BEST_FIT"
-    max_vcpus           = var.max_vcpus
+    type                = var.compute_environment.use_spot ? "SPOT" : "EC2"
+    allocation_strategy = var.compute_environment.use_spot ? "SPOT_CAPACITY_OPTIMIZED" : "BEST_FIT"
+    max_vcpus           = var.compute_environment.max_vcpus
     min_vcpus           = 0
-    instance_type       = var.instance_types
+    instance_type       = var.compute_environment.instance_types
     instance_role       = aws_iam_instance_profile.ecs.arn
     subnets             = local.subnet_ids
     security_group_ids  = [aws_security_group.batch.id]
 
     launch_template {
-      launch_template_id = aws_launch_template.batch.id
-      version            = var.launch_template_version
+      launch_template_id = var.launch_template.existing_id != null ? var.launch_template.existing_id : aws_launch_template.batch[0].id
+      version            = var.launch_template.version
     }
 
     dynamic "ec2_configuration" {
-      for_each = var.ec2_image_type != null ? [1] : []
+      for_each = var.compute_environment.ec2_image_type != null ? [1] : []
       content {
-        image_type = var.ec2_image_type
+        image_type = var.compute_environment.ec2_image_type
       }
     }
   }
