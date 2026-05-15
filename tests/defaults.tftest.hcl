@@ -1,7 +1,7 @@
 # tests/defaults.tftest.hcl
 #
 # Validates the plan produced by the module's default configuration without
-# making any real AWS API calls. Requires OpenTofu >= 1.7 or Terraform >= 1.7.
+# making any real AWS API calls. Requires OpenTofu >= 1.8 or Terraform >= 1.8.
 
 mock_provider "aws" {
   mock_data "aws_availability_zones" {

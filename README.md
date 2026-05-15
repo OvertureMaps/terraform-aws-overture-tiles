@@ -23,27 +23,41 @@ module "overture_tiles" {
 
   bucket_name = "my-overture-tiles"
 
-  # Optional overrides — defaults shown
+  # Optional — all fields have defaults
   name_prefix                    = "overture-tiles"
   create_cloudfront_distribution = true
   cloudfront_price_class         = "PriceClass_All"
   themes                         = ["addresses", "admins", "base", "buildings", "divisions", "places", "transportation"]
   container_image                = "ghcr.io/overturemaps/overture-tiles:latest"
-  instance_types                 = ["c7gd.8xlarge"]
   job_memory_gib                 = 60
   job_vcpus                      = 30
   create_vpc                     = true
   tags                           = {}
+
+  compute_environment = {
+    instance_types = ["c7gd.8xlarge"]
+    use_spot       = false
+    max_vcpus      = 256
+  }
+
+  launch_template = {
+    configure_instance_storage = true
+  }
 }
 ```
 
 See [`examples/complete`](examples/complete) for a full working example.
 
+## Compatibility
+
+The module HCL is compatible with both **OpenTofu** (≥ 1.8) and **Terraform** (≥ 1.8). CI validates against OpenTofu; if you use Terraform, run `terraform init` to regenerate the lock file for your registry.
+
 ## Requirements
 
 | Name | Version |
 |---|---|
-| Terraform | >= 1.3.0 |
+| OpenTofu | >= 1.8.0 |
+| Terraform | >= 1.8.0 |
 | AWS provider | >= 5.0, < 7.0 |
 
 ## Inputs

@@ -1,7 +1,7 @@
 # tests/custom_config.tftest.hcl
 #
 # Validates non-default configurations: disabled CloudFront, Spot, existing
-# VPC, subset of themes, and custom name_prefix.
+# VPC, subset of themes, and custom name_prefix. Requires OpenTofu >= 1.8 or Terraform >= 1.8.
 
 mock_provider "aws" {
   mock_data "aws_availability_zones" {
