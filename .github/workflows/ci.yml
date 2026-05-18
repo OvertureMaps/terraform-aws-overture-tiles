@@ -25,7 +25,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb # v2.0.0
+      - uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
         with:
           tofu_version: "1.9.0"
           tofu_wrapper: false
@@ -48,7 +48,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb # v2.0.0
+      - uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
         with:
           tofu_version: "1.9.0"
           tofu_wrapper: false
@@ -83,7 +83,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb # v2.0.0
+      - uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
         with:
           tofu_version: "1.9.0"
           tofu_wrapper: false
@@ -113,7 +113,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb # v2.0.0
+      - uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
         with:
           tofu_version: "1.9.0"
           tofu_wrapper: false
