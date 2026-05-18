@@ -1,6 +1,10 @@
 # terraform-aws-overture-tiles
 
-Terraform module that provisions the AWS infrastructure required to generate and serve [Overture Maps](https://overturemaps.org) PMTiles.
+[![CI](https://github.com/OvertureMaps/terraform-aws-overture-tiles/actions/workflows/ci.yml/badge.svg)](https://github.com/OvertureMaps/terraform-aws-overture-tiles/actions/workflows/ci.yml)
+[![OpenTofu Registry](https://img.shields.io/badge/OpenTofu-overturemaps%2Foverture--tiles%2Faws-purple?logo=opentofu)](https://search.opentofu.org/module/overturemaps/overture-tiles/aws/latest)
+[![License](https://img.shields.io/github/license/OvertureMaps/terraform-aws-overture-tiles)](LICENSE)
+
+Terraform module that provisions the AWS infrastructure required to generate and serve [Overture Maps](https://overturemaps.org) data as [PMTiles](https://protomaps.com/).
 
 ## What this module creates
 
@@ -19,7 +23,8 @@ Terraform module that provisions the AWS infrastructure required to generate and
 
 ```hcl
 module "overture_tiles" {
-  source = "github.com/OvertureMaps/terraform-aws-overture-tiles"
+  source  = "overturemaps/overture-tiles/aws"
+  version = "~> 1.0"
 
   bucket_name = "my-overture-tiles"
 
@@ -155,18 +160,3 @@ When set, attaches an additional EBS volume via the launch template.
 | `log_group_name`              | CloudWatch Logs group name for Batch job output          |
 | `vpc_id`                      | ID of the VPC used by the Batch compute environment      |
 | `subnet_ids`                  | IDs of the subnets used by the Batch compute environment |
-
-## Maintainers
-
-This repository uses `MAINTAINERS.md` files to track ownership for [LFX Insights](https://insights.linuxfoundation.org/docs/introduction/maintainers/) ingestion. LFX scans the full repository tree, so these files can live anywhere.
-
-To add a `MAINTAINERS.md` for a module or package, create it in the relevant directory using this format:
-
-```markdown
-# MAINTAINERS
-
-| Name     | GitHub Username | Role            | Affiliation |
-| -------- | --------------- | --------------- | ----------- |
-| Jane Doe | @janedoe        | Lead Maintainer | Org         |
-```
-
