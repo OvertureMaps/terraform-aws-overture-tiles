@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/OvertureMaps/terraform-aws-overture-tiles/actions/workflows/ci.yml/badge.svg)](https://github.com/OvertureMaps/terraform-aws-overture-tiles/actions/workflows/ci.yml)
 [![OpenTofu Registry](https://img.shields.io/badge/OpenTofu-overturemaps%2Foverture--tiles%2Faws-purple?logo=opentofu)](https://search.opentofu.org/module/overturemaps/overture-tiles/aws/latest)
+[![Terraform Registry](https://img.shields.io/badge/Terraform-Registry-7B42BC?logo=terraform)](https://registry.terraform.io/modules/OvertureMaps/overture-tiles/aws/latest)
 [![License](https://img.shields.io/github/license/OvertureMaps/terraform-aws-overture-tiles)](LICENSE)
 
 Terraform module that provisions the AWS infrastructure required to generate and serve [Overture Maps](https://overturemaps.org) data as [PMTiles](https://protomaps.com/).
