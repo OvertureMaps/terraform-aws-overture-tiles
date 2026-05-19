@@ -15,6 +15,21 @@ locals {
   resolved_log_group_name       = coalesce(var.name_overrides.cloudwatch_log_group, "/aws/batch/${var.name_prefix}")
   resolved_lt_name_pfx          = coalesce(var.launch_template.name_prefix, "${var.name_prefix}-")
   resolved_compute_env_name_pfx = coalesce(var.compute_environment.name_prefix, "${var.name_prefix}-")
+
+  # AWS Batch requires UserData in MIME multipart format when supplied via a
+  # launch template. Wrap a plain shell-script automatically so callers do not
+  # need to know about the MIME envelope.
+  mime_user_data = var.launch_template.user_data != null ? join("\n", [
+    "MIME-Version: 1.0",
+    "Content-Type: multipart/mixed; boundary=\"==BOUNDARY==\"",
+    "",
+    "--==BOUNDARY==",
+    "Content-Type: text/x-shellscript; charset=\"us-ascii\"",
+    "",
+    var.launch_template.user_data,
+    "",
+    "--==BOUNDARY==--",
+  ]) : null
 }
 
 resource "aws_launch_template" "batch" {
@@ -22,11 +37,7 @@ resource "aws_launch_template" "batch" {
 
   name_prefix = local.resolved_lt_name_pfx
   image_id    = local.resolved_ami_id
-  user_data = (
-    var.launch_template.user_data != null
-    ? base64encode(var.launch_template.user_data)
-    : null
-  )
+  user_data = local.mime_user_data != null ? base64encode(local.mime_user_data) : null
 
   dynamic "block_device_mappings" {
     for_each = var.ebs_volume != null ? [var.ebs_volume] : []
