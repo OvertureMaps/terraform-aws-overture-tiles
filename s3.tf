@@ -26,39 +26,48 @@ resource "aws_s3_bucket_cors_configuration" "tiles" {
 
 # Bucket policy: public-read statement and/or CloudFront OAC statement.
 # Only created when at least one of the two options is enabled.
-locals {
-  bucket_policy_public_read = var.public_access_enabled ? [jsonencode({
-    Sid       = "PublicReadGetObject"
-    Effect    = "Allow"
-    Principal = "*"
-    Action    = "s3:GetObject"
-    Resource  = "${local.tiles_bucket_arn}/*"
-  })] : []
+data "aws_iam_policy_document" "tiles_bucket" {
+  count = var.create_s3_bucket && (var.public_access_enabled || var.create_cloudfront_distribution) ? 1 : 0
 
-  bucket_policy_cloudfront_oac = var.create_cloudfront_distribution ? [jsonencode({
-    Sid    = "CloudFrontOAC"
-    Effect = "Allow"
-    Principal = {
-      Service = "cloudfront.amazonaws.com"
+  dynamic "statement" {
+    for_each = var.public_access_enabled ? [1] : []
+    content {
+      sid    = "PublicReadGetObject"
+      effect = "Allow"
+      principals {
+        type        = "*"
+        identifiers = ["*"]
+      }
+      actions   = ["s3:GetObject"]
+      resources = ["${local.tiles_bucket_arn}/*"]
     }
-    Action   = "s3:GetObject"
-    Resource = "${local.tiles_bucket_arn}/*"
-    Condition = {
-      StringEquals = {
-        "AWS:SourceArn" = aws_cloudfront_distribution.tiles[0].arn
+  }
+
+  dynamic "statement" {
+    for_each = var.create_cloudfront_distribution ? [1] : []
+    content {
+      sid    = "CloudFrontOAC"
+      effect = "Allow"
+      principals {
+        type        = "Service"
+        identifiers = ["cloudfront.amazonaws.com"]
+      }
+      actions   = ["s3:GetObject"]
+      resources = ["${local.tiles_bucket_arn}/*"]
+      condition {
+        test     = "StringEquals"
+        variable = "AWS:SourceArn"
+        values   = [aws_cloudfront_distribution.tiles[0].arn]
       }
     }
-  })] : []
+  }
 }
 
 resource "aws_s3_bucket_policy" "tiles" {
   count = var.create_s3_bucket && (var.public_access_enabled || var.create_cloudfront_distribution) ? 1 : 0
 
   bucket = aws_s3_bucket.tiles[0].id
-  policy = jsonencode({
-    Version   = "2012-10-17"
-    Statement = concat(local.bucket_policy_public_read, local.bucket_policy_cloudfront_oac)
-  })
+  policy = data.aws_iam_policy_document.tiles_bucket[0].json
 
   # Ensure the public-access block is applied before the policy is set.
   depends_on = [aws_s3_bucket_public_access_block.tiles]
