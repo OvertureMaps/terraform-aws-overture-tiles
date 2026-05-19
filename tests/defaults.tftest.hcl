@@ -63,6 +63,12 @@ mock_provider "aws" {
       bucket_regional_domain_name = "test-overture-tiles-bucket.s3.us-east-1.amazonaws.com"
     }
   }
+
+  mock_data "aws_iam_policy_document" {
+    defaults = {
+      json = "{\"Version\":\"2012-10-17\",\"Statement\":[]}"
+    }
+  }
 }
 
 variables {
