@@ -60,11 +60,12 @@ The module HCL is compatible with both **OpenTofu** (≥ 1.8) and **Terraform** 
 
 ## Requirements
 
-| Name         | Version       |
-| ------------ | ------------- |
-| OpenTofu     | >= 1.8.0      |
-| Terraform    | >= 1.8.0      |
-| AWS provider | >= 5.0, < 7.0 |
+| Name               | Version       |
+| ------------------ | ------------- |
+| OpenTofu           | >= 1.8.0      |
+| Terraform          | >= 1.8.0      |
+| AWS provider       | >= 5.0, < 7.0 |
+| cloudinit provider | >= 2.0        |
 
 ## Inputs
 
@@ -120,14 +121,14 @@ Override names for resources that already exist in state. All fields are optiona
 
 ### `launch_template` object
 
-| Field                | Description                                                  | Default                      |
-| -------------------- | ------------------------------------------------------------ | ---------------------------- |
-| `existing_id`        | ID of an externally-managed launch template (skips creation) | `null`                       |
-| `name_prefix`        | Launch template `name_prefix` override                       | `null`                       |
-| `ami_id`             | Custom ECS-optimised AMI ID                                  | `null` (latest ARM64 AL2023) |
-| `user_data`          | Plaintext user data script — module base64-encodes it        | `null`                       |
-| `tag_specifications` | List of `{ resource_type, tags }` tag specification objects  | `null`                       |
-| `version`            | Launch template version to use in the compute environment    | `null`                       |
+| Field                | Description                                                                                 | Default                      |
+| -------------------- | ------------------------------------------------------------------------------------------- | ---------------------------- |
+| `existing_id`        | ID of an externally-managed launch template (skips creation)                                | `null`                       |
+| `name_prefix`        | Launch template `name_prefix` override                                                      | `null`                       |
+| `ami_id`             | Custom ECS-optimised AMI ID                                                                 | `null` (latest ARM64 AL2023) |
+| `user_data`          | Plain shell script — automatically wrapped in MIME multipart format (required by AWS Batch) | `null`                       |
+| `tag_specifications` | List of `{ resource_type, tags }` tag specification objects                                 | `null`                       |
+| `version`            | Launch template version to use in the compute environment                                   | `null`                       |
 
 ### `ebs_volume` object
 
