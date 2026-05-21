@@ -254,3 +254,22 @@ run "custom_ami" {
     error_message = "Launch template should use the custom ami_id when provided."
   }
 }
+
+# ──────────────────────────────────────────────
+# run: custom container image
+# ──────────────────────────────────────────────
+
+run "custom_container_image" {
+  command = apply
+
+  variables {
+    bucket_name     = "custom-image-tiles-bucket"
+    container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/overture-tiles:v2.0.0"
+    themes          = ["base"]
+  }
+
+  assert {
+    condition     = strcontains(aws_batch_job_definition.tiles["base"].container_properties, "123456789012.dkr.ecr.us-east-1.amazonaws.com/overture-tiles:v2.0.0")
+    error_message = "Job definition should use the custom container_image."
+  }
+}
