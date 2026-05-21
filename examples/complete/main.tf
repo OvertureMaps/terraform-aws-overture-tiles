@@ -15,7 +15,7 @@ module "overture_tiles" {
   cloudfront_price_class         = "PriceClass_All"
 
   # Batch jobs – defaults match the overture-tiles CDK stack
-  container_image = "ghcr.io/overturemaps/overture-tiles:latest"
+  container_image = var.container_image
   job_memory_gib  = 60
   job_vcpus       = 30
 

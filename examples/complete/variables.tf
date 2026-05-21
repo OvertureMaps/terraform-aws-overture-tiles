@@ -21,6 +21,12 @@ variable "themes" {
   default     = ["addresses", "base", "buildings", "divisions", "places", "transportation"]
 }
 
+variable "container_image" {
+  description = "Container image used by every Batch job definition."
+  type        = string
+  default     = "ghcr.io/overturemaps/overture-tiles:latest"
+}
+
 variable "tags" {
   description = "Tags applied to every resource."
   type        = map(string)
